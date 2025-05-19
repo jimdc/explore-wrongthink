@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ew-cache-v1';
+const CACHE_NAME = 'ew-cache-v2';
 const URLS_TO_CACHE = [
   './',
   './index.html',
@@ -16,7 +16,11 @@ const URLS_TO_CACHE = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      const requests = URLS_TO_CACHE.map(u => new Request(u, {mode: 'no-cors'}));
+      const requests = URLS_TO_CACHE.map(u => {
+        const url = new URL(u, self.location);
+        const opts = url.origin === self.location.origin ? {} : {mode: 'no-cors'};
+        return new Request(u, opts);
+      });
       return cache.addAll(requests);
     })
   );

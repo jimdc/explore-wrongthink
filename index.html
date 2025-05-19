@@ -27,7 +27,7 @@
 <body>
 <div id="loading">
   <div class="spinner"></div>
-  <div id="loading-text">Loading dataset...</div>
+  <div id="loading-text">Loading dataset... <span class="text-muted">(debug messages below)</span></div>
   <div id="loading-debug" class="text-muted small"></div>
 </div>
 <div class="container my-4">
@@ -334,13 +334,17 @@ document.getElementById("zoomRange").addEventListener("input", e => {
 });
 const KEYS = CATEGORY_KEYS;
 
+let loadStep = 1;
+function stepDebug(msg) {
+    appendLoadingDebug(`Step ${loadStep++}/5: ${msg}`);
+}
+
 const datasetPromise = new Promise((resolve, reject) => {
     console.log('Initializing dataset load');
     updateLoadingText('Fetching dataset...');
-    appendLoadingDebug('datasetPromise started');
+    stepDebug('datasetPromise started');
 
     window.datasetResolve = () => {
-        appendLoadingDebug('Dataset loaded');
         resolve();
     };
     window.datasetReject = err => {
@@ -351,14 +355,14 @@ const datasetPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
     script.src = 'dataset-loader.js';
     script.onload = () => {
-        appendLoadingDebug('dataset-loader.js loaded');
+        stepDebug('dataset-loader.js loaded');
     };
     script.onerror = err => {
-        appendLoadingDebug('dataset-loader.js failed to load');
+        stepDebug('dataset-loader.js failed to load');
         reject(new Error('Failed to load dataset-loader.js'));
     };
     document.head.appendChild(script);
-    appendLoadingDebug('dataset-loader.js script appended');
+    stepDebug('dataset-loader.js script appended');
 });
 
 let datasetLoaded = false;
@@ -369,14 +373,14 @@ setTimeout(() => {
         appendLoadingDebug('Dataset still not loaded after 5s');
         const el = document.getElementById('loading-text');
         if (el && el.textContent.includes('Fetching')) {
-            el.textContent += ' (still loading, check console)';
+            el.textContent += ' (still loading, see debug or console)';
         }
     }
 }, 5000);
 
 setTimeout(() => {
     if (!datasetLoaded) {
-        updateLoadingText('Failed to load dataset. Check console.');
+        updateLoadingText('Failed to load dataset. See debug or console.');
         appendLoadingDebug('Dataset failed to load within 10s');
     }
 }, 10000);

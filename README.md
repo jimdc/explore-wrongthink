@@ -46,3 +46,13 @@ then open `http://localhost:8000/` (or the port shown) in your browser, or use
 GitHub Pages to view the site. Using a regular HTTP(S) URL avoids the
 file-protocol restrictions that would otherwise keep "Loading dataset..." on the
 screen.
+
+The page also shows loading debug messages directly below the spinner. If the
+dataset fails to load, these messages will include HTTP status codes and other
+details to help diagnose the problem. The messages are numbered ("Step 1/5",
+"Step 2/5", etc.) so you can see exactly where the loading process stops.
+
+If you have previously visited the page, your browser may still hold an older
+service worker cache. Clearing the site's stored data (or performing a hard
+reload) will fetch the updated cache named `ew-cache-v2` and ensure the dataset
+loader script runs correctly.
