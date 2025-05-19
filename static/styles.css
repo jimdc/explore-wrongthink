@@ -33,6 +33,11 @@ mark {
     text-align: center;
     margin: 20px;
 }
+.loading-debug, #loading-debug {
+    font-size: 0.8rem;
+    color: #555;
+    margin-top: 0.5rem;
+}
 .spinner {
     border: 8px solid #f3f3f3;
     border-top: 8px solid #3498db;

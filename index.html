@@ -25,7 +25,11 @@
     </script>
 </head>
 <body>
-<div id="loading"><div class="spinner"></div>Loading dataset...</div>
+<div id="loading">
+  <div class="spinner"></div>
+  <div id="loading-msg">Loading dataset...</div>
+  <div id="loading-debug"></div>
+</div>
 <div class="container my-4">
 <h1>Explore-wrongthink</h1>
 <p class="text-danger">Contains potentially disturbing text.</p>
@@ -314,31 +318,63 @@ document.getElementById("zoomRange").addEventListener("input", e => {
 });
 const KEYS = CATEGORY_KEYS;
 
+const loadingMain = document.getElementById('loading-msg');
+const loadingDebug = document.getElementById('loading-debug');
+
+function logStatus(msg, level = 'log') {
+    if (loadingDebug) {
+        const div = document.createElement('div');
+        div.textContent = msg;
+        loadingDebug.appendChild(div);
+    }
+    console[level](msg);
+}
+window.logStatus = logStatus;
+
 const datasetPromise = new Promise((resolve, reject) => {
+    logStatus('Initializing dataset load');
     const script = document.createElement('script');
-    const loading = document.getElementById('loading');
-    if (loading) loading.textContent = 'Fetching dataset...';
+    if (loadingMain) loadingMain.textContent = 'Fetching dataset...';
     script.src = 'dataset.js';
     script.onload = () => {
-        console.log('dataset.js loaded');
+        logStatus('dataset.js onload fired');
         if (typeof dataset === 'undefined') {
+            logStatus('dataset variable missing after load', 'error');
             reject(new Error('dataset variable missing after load'));
             return;
         }
+        logStatus('Dataset length: ' + (Array.isArray(dataset) ? dataset.length : 'unknown'));
         resolve();
     };
-    script.onerror = () => reject(new Error('Failed to load dataset.js'));
+    script.onerror = err => {
+        logStatus('dataset.js failed to load', 'error');
+        reject(new Error('Failed to load dataset.js'));
+    };
     document.head.appendChild(script);
+    logStatus('dataset.js script appended');
+});
+
+let datasetLoaded = false;
+datasetPromise.then(() => {
+    datasetLoaded = true;
+    if (loadingDebug) loadingDebug.innerHTML = '';
 });
 
 setTimeout(() => {
-    if (typeof dataset === 'undefined') {
-        const loading = document.getElementById('loading');
-        if (loading && loading.textContent.includes('Fetching')) {
-            loading.textContent += ' (still loading, check console)';
+    if (!datasetLoaded) {
+        if (loadingMain && loadingMain.textContent.includes('Fetching')) {
+            loadingMain.textContent += ' (still loading, check console)';
         }
+        logStatus('Dataset still not loaded after 5s', 'warn');
     }
 }, 5000);
+
+setTimeout(() => {
+    if (!datasetLoaded) {
+        if (loadingMain) loadingMain.textContent = 'Failed to load dataset. Check console.';
+        logStatus('Dataset failed to load within 10s', 'error');
+    }
+}, 10000);
 
 function gloss(key) {
     return checkboxLabelMapping[key] || key;
@@ -714,7 +750,7 @@ const MIN_WORD_FREQ = 3;
 
 datasetPromise.then(() => {
     const loading = document.getElementById('loading');
-    if (loading) loading.textContent = `Processing ${Array.isArray(dataset) ? dataset.length : '?'} prompts...`;
+    if (loadingMain) loadingMain.textContent = `Processing ${Array.isArray(dataset) ? dataset.length : '?'} prompts...`;
     // allow DOM update before heavy work
     setTimeout(() => {
         if (loading) loading.style.display = 'none';
@@ -731,9 +767,8 @@ datasetPromise.then(() => {
         generateSubset();
     }, 10);
 }).catch(err => {
-    const loading = document.getElementById('loading');
-    if (loading) loading.textContent = 'Error loading dataset: ' + (err.message || err);
-    console.error('Failed to load dataset.js', err);
+    if (loadingMain) loadingMain.textContent = 'Error loading dataset: ' + (err.message || err);
+    logStatus('Failed to load dataset.js', 'error');
 });
 </script>
 <script>
