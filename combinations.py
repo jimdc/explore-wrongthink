@@ -14,9 +14,13 @@ checkbox_label_mapping = {
     'V2': 'violence/graphic'
 }
 
-with open('samples-1680.jsonl', 'r') as f:
-    lines = f.readlines()
-    data = [json.loads(line) for line in lines]
+with open('dataset.js', 'r', encoding='utf-8') as f:
+    js_content = f.read()
+prefix = 'const dataset = '
+if js_content.startswith(prefix):
+    js_content = js_content[len(prefix):]
+js_content = js_content.rstrip(';/\n')
+data = json.loads(js_content)
     
 # Define all possible keys
 all_keys = ['S', 'H', 'V', 'HR', 'SH', 'S3', 'H2', 'V2']

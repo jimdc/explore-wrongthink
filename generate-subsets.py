@@ -9,7 +9,6 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    data = {}  # Will hold each parsed JSON object
     checkbox_label_mapping = {
         'S': 'sexual (S)',
         'H': 'hate (H)',
@@ -29,33 +28,37 @@ def index():
             checkbox_values[checkbox] = request.form.get(f'radio-{checkbox}', 'Any')
             logging.debug(f"Checkbox {checkbox} value: {checkbox_values[checkbox]}")
 
-        with open('samples-1680.jsonl', 'r') as f:
-            for line in f:
-                try:
-                    data = json.loads(line)
-                except json.JSONDecodeError:
-                    logging.warning(f"Skipping malformed JSON")
-                    continue
+        with open('dataset.js', 'r', encoding='utf-8') as f:
+            js_content = f.read()
+        prefix = 'const dataset = '
+        if js_content.startswith(prefix):
+            js_content = js_content[len(prefix):]
+        js_content = js_content.rstrip(';/\n')
+        dataset = json.loads(js_content)
 
-                if all(
-                    str(data.get(checkbox, 'N/A')) == checkbox_values[checkbox] or
-                    checkbox_values[checkbox] == 'Any' or
-                    (checkbox_values[checkbox] == '0 or N/A' and str(data.get(checkbox, 'N/A')) in ['0', 'N/A'])
-                    for checkbox in checkboxes
-                ):
-                    keys_0, keys_1, keys_na = [], [], []
-                    for checkbox in checkboxes:
-                        value = str(data.get(checkbox, 'N/A'))
-                        if value == '0':
-                            keys_0.append(checkbox_label_mapping[checkbox])
-                        elif value == '1':
-                            keys_1.append(checkbox_label_mapping[checkbox])
-                        else:
-                            keys_na.append(checkbox_label_mapping[checkbox])
-                    data['keys_0'] = ', '.join(keys_0)
-                    data['keys_1'] = ', '.join(keys_1)
-                    data['keys_na'] = ', '.join(keys_na)
-                    matching_lines.append(data)
+        for record in dataset:
+            if all(
+                str(record.get(checkbox, 'N/A')) == checkbox_values[checkbox] or
+                checkbox_values[checkbox] == 'Any' or
+                (
+                    checkbox_values[checkbox] == '0 or N/A'
+                    and str(record.get(checkbox, 'N/A')) in ['0', 'N/A']
+                )
+                for checkbox in checkboxes
+            ):
+                keys_0, keys_1, keys_na = [], [], []
+                for checkbox in checkboxes:
+                    value = str(record.get(checkbox, 'N/A'))
+                    if value == '0':
+                        keys_0.append(checkbox_label_mapping[checkbox])
+                    elif value == '1':
+                        keys_1.append(checkbox_label_mapping[checkbox])
+                    else:
+                        keys_na.append(checkbox_label_mapping[checkbox])
+                record['keys_0'] = ', '.join(keys_0)
+                record['keys_1'] = ', '.join(keys_1)
+                record['keys_na'] = ', '.join(keys_na)
+                matching_lines.append(record)
 
     return render_template_string("""
         <h1> Explore-wrongthink </h1>
